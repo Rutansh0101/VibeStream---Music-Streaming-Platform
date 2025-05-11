@@ -39,7 +39,11 @@ function Sidebar() {
                 <p className='font-light'>we'll keep you updated on new episodes</p>
                 <button className='px-4 py-1.5 bg-white text-[15px] text-black rounded-full mt-4 cursor-pointer'>Browse Podcasts</button>
             </div>
-
+            <div className='p-4 bg-[#242424] m-2 rounded font-semibold flex flex-col items-start justify-start gap-1 pl-4'>
+                <h1>Upload A New Song</h1>
+                <p className='font-light'>Make Yourself A Part Of VibeStream Community</p>
+                <button onClick={()=>navigate('/add-song')} className='px-4 py-1.5 bg-white text-[15px] text-black rounded-full mt-4 cursor-pointer'>Continue</button>
+            </div>
         </div>
     </div>
   )

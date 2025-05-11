@@ -11,6 +11,8 @@ const PlayerConetextProvider = (props) => {
 
     const [track, setTrack] = useState(songsData[0]);
     const [playStatus, setPlayStatus] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
+    const [hoverPosition, setHoverPosition] = useState(null);
     const [time, setTime] = useState({
         currentTime: {
             second: 0,
@@ -64,10 +66,54 @@ const PlayerConetextProvider = (props) => {
         }
     }
 
-    const seekSong = async(e) =>{
-        audioRef.current.currentTime = (e.nativeEvent.offsetX / seekBg.current.clientWidth) * audioRef.current.duration;
+    const updateSeekPosition = (e) => {
+        const rect = seekBg.current.getBoundingClientRect();
+        const offsetX = e.clientX - rect.left;
+        const width = rect.width;
+        const percentage = Math.max(0, Math.min(1, offsetX / width));
         
-    }
+        audioRef.current.currentTime = percentage * audioRef.current.duration;
+    };
+
+    const handleDragStart = (e) => {
+        setIsDragging(true);
+        updateSeekPosition(e);
+        
+        // Add event listeners to track mouse movement
+        document.addEventListener('mousemove', handleDragMove);
+        document.addEventListener('mouseup', handleDragEnd);
+    };
+
+    const handleDragMove = (e) => {
+        if (isDragging) {
+            updateSeekPosition(e);
+        }
+    };
+
+    const handleDragEnd = () => {
+        setIsDragging(false);
+        // Remove event listeners when done
+        document.removeEventListener('mousemove', handleDragMove);
+        document.removeEventListener('mouseup', handleDragEnd);
+    };
+
+    const handleSeekHover = (e) => {
+        const rect = seekBg.current.getBoundingClientRect();
+        const offsetX = e.clientX - rect.left;
+        const width = rect.width;
+        const percentage = Math.max(0, Math.min(1, offsetX / width));
+        setHoverPosition(percentage);
+    };
+
+    const handleSeekLeave = () => {
+        setHoverPosition(null);
+    };
+
+    const seekSong = (e) => {
+        if (!isDragging) {
+            updateSeekPosition(e);
+        }
+    };
 
     useEffect(() => {
         setTimeout(()=>{
@@ -101,7 +147,7 @@ const PlayerConetextProvider = (props) => {
                 }));
             };
         }, 1000)
-    }, [audioRef])
+    }, [audioRef]);
 
     const contextValue = {
         audioRef,
@@ -114,9 +160,14 @@ const PlayerConetextProvider = (props) => {
         playWithId,
         previous, next,
         seekSong,
+        isDragging,
+        hoverPosition,
+        handleDragStart,
+        handleDragMove,
+        handleDragEnd,
+        handleSeekHover,
+        handleSeekLeave,
     };
-
-
 
     return (
         <PlayerContext.Provider value={contextValue}>
