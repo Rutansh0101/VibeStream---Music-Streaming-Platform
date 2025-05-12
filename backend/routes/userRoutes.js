@@ -1,5 +1,5 @@
 import express from 'express';
-import { getProfile, updateProfile, getUserStats } from '../controllers/userController.js';
+import { getProfile, updateProfile, getUserStats, getArtists, getUserById } from '../controllers/userController.js';
 import { protect } from '../middlewares/authMiddleware.js';
 import multer from 'multer';
 import path from 'path';
@@ -42,5 +42,8 @@ const upload = multer({
 router.get('/profile', protect, getProfile);
 router.put('/profile', protect, upload.single('profileImage'), updateProfile);
 router.get('/stats', protect, getUserStats);
+
+router.get('/artists', getArtists); // Get artists
+router.get('/:id', getUserById);
 
 export default router;

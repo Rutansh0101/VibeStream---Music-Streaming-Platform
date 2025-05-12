@@ -10,7 +10,10 @@ import Profile from './Profile';
 import YourSongs from './YourSongs';
 import Settings from './Settings';
 import Logout from './Logout';
-
+import DisplayPlaylist from './DisplayPlaylist'
+import UserPlaylists from './UserPlaylists';
+import Search from './Search'; // Import the Search component
+import ArtistProfile from './ArtistProfile';
 
 function Display() {
 
@@ -52,6 +55,10 @@ function Display() {
             <Route path='/your-songs' element={<YourSongs/>} />
             <Route path='/settings' element={<Settings/>} />
             <Route path='/logout' element={<Logout/>} />
+            <Route path='/playlist/:id' element={<DisplayPlaylist />} />
+            <Route path='/playlists' element={<UserPlaylists />} />
+            <Route path='/search' element={<Search />} /> {/* Add the search route */}
+            <Route path='/artist/:id' element={<ArtistProfile />} />
         </Routes>
     </div>
   )

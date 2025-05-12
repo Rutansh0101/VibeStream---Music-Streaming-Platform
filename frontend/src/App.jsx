@@ -9,6 +9,8 @@ import Login from './components/Login'
 import Signup from './components/Signup'
 import ProtectedRoute from './components/ProtectedRoute'
 import Loader from './components/Loader'
+import CreatePlaylist from './components/CreatePlaylist'
+
 
 function App() {
   const { audioRef, track } = useContext(PlayerContext);
@@ -38,6 +40,8 @@ function App() {
       
       {/* Fallback redirect */}
       <Route path="*" element={<Navigate to="/login" replace />} />
+      <Route path='/create-playlist' element={<CreatePlaylist />} />
+        
     </Routes>
   );
 }

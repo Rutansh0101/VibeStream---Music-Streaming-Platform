@@ -3,18 +3,22 @@ import Navbar from './Navbar';
 import { FiClock, FiDownload, FiTrash2, FiMoreHorizontal, FiMusic, FiPlus, FiLoader } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { PlayerContext } from '../context/PlayerContext';
 import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { format } from 'date-fns';
+import SongDetailsModal from './SongDetailsModal';
 
 function YourSongs() {
   const navigate = useNavigate();
   const { authHeader } = useContext(AuthContext);
+  const { playWithId } = useContext(PlayerContext);
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [deleting, setDeleting] = useState(null);
+  const [selectedSong, setSelectedSong] = useState(null);
 
   // Format date for display
   const formatDate = (dateString) => {
@@ -52,7 +56,10 @@ function YourSongs() {
   }, []);
 
   // Handle song deletion
-  const handleDeleteSong = async (id) => {
+  const handleDeleteSong = async (id, event) => {
+    // Prevent click from opening the modal
+    event.stopPropagation();
+    
     try {
       setDeleting(id);
 
@@ -87,6 +94,16 @@ function YourSongs() {
     } finally {
       setDeleting(null);
     }
+  };
+
+  // Handle song click to show details
+  const handleSongClick = (song) => {
+    setSelectedSong(song);
+  };
+
+  // Handle play from modal
+  const handlePlaySong = (song) => {
+    playWithId(song._id);
   };
 
   return (
@@ -135,7 +152,8 @@ function YourSongs() {
                 {songs.map((song, index) => (
                   <div
                     key={song._id}
-                    className='grid grid-cols-12 p-4 hover:bg-[#3E3E3E] transition-colors items-center border-b border-[#3E3E3E] last:border-b-0 group'
+                    onClick={() => handleSongClick(song)}
+                    className='grid grid-cols-12 p-4 hover:bg-[#3E3E3E] transition-colors items-center border-b border-[#3E3E3E] last:border-b-0 group cursor-pointer'
                   >
                     <div className='col-span-1 text-gray-400'>{index + 1}</div>
                     <div className='col-span-5 font-medium flex items-center gap-3'>
@@ -158,7 +176,7 @@ function YourSongs() {
                     <div className='col-span-1 flex justify-center text-gray-400'>{song.duration}</div>
                     <div className='col-span-1 flex justify-end'>
                       <button
-                        onClick={() => handleDeleteSong(song._id)}
+                        onClick={(e) => handleDeleteSong(song._id, e)}
                         disabled={deleting === song._id}
                         className={`opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 p-2 rounded-full hover:bg-[#4e4e4e] ${deleting === song._id ? 'opacity-100' : ''}`}
                         title="Delete song"
@@ -187,6 +205,15 @@ function YourSongs() {
           </div>
         )}
       </div>
+      
+      {/* Song Details Modal */}
+      {selectedSong && (
+        <SongDetailsModal
+          song={selectedSong}
+          onClose={() => setSelectedSong(null)}
+          onPlay={handlePlaySong}
+        />
+      )}
     </div>
   );
 }

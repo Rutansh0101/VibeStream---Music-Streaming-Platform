@@ -254,4 +254,24 @@ const getSongById = async (req, res) => {
   }
 };
 
-export { addSong, listSong, getUserSongs, removeSong, getSongById };
+const getSongsByUserId = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    const songs = await songModel.find({ user: userId })
+      .sort({ createdAt: -1 });
+    
+    res.status(200).json({
+      success: true,
+      songs
+    });
+  } catch (error) {
+    console.error('Error fetching user songs:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch songs'
+    });
+  }
+};
+
+export { addSong, listSong, getUserSongs, removeSong, getSongById, getSongsByUserId };

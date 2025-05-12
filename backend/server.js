@@ -13,6 +13,8 @@ import authRouter from './routes/authRoutes.js';
 import songRouter from './routes/songRoutes.js';
 import albumRouter from './routes/albumRoutes.js';
 import userRouter from './routes/userRoutes.js';
+import playlistRouter from './routes/playlistRoutes.js';
+import searchRouter from './routes/searchRoutes.js';
 
 // App config
 const app = express();
@@ -41,6 +43,8 @@ app.use('/api/auth', authRouter);
 app.use('/api/songs', songRouter);
 app.use('/api/albums', albumRouter);
 app.use('/api/user', userRouter);
+app.use('/api/playlists', playlistRouter);
+app.use('/api/search', searchRouter);
 
 
 // Create uploads directory if it doesn't exist

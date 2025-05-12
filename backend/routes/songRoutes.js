@@ -1,4 +1,4 @@
-import { addSong, listSong, getUserSongs, removeSong, getSongById } from "../controllers/songController.js";
+import { addSong, listSong, getUserSongs, removeSong, getSongById, getSongsByUserId } from "../controllers/songController.js";
 import express from "express";
 import upload from "../middlewares/multer.js";
 import { protect } from "../middlewares/authMiddleware.js";
@@ -15,5 +15,7 @@ songRouter.get('/list', listSong);  // Define specific routes FIRST
 
 // Parameter route should come LAST
 songRouter.get('/:id', getSongById); // This should always be last
+
+songRouter.get('/by-user/:userId', getSongsByUserId);
 
 export default songRouter;

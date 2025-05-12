@@ -7,6 +7,7 @@ import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import { format } from 'date-fns';
 import { toast, ToastContainer } from 'react-toastify';
+import SongDetailsModal from './SongDetailsModal';
 
 function DisplayAlbum() {
     const { id } = useParams();
@@ -18,6 +19,7 @@ function DisplayAlbum() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [bgColor, setBgColor] = useState("#121212"); // Default background color
+    const [selectedSong, setSelectedSong] = useState(null);
     
     const memoizedSetPlaylist = useCallback((playlist) => {
       setCurrentPlaylist(playlist);
@@ -87,18 +89,23 @@ function DisplayAlbum() {
       } finally {
         setLoading(false);
       }
-    }, [id, memoizedSetPlaylist]);
+    }, [id]);
 
     // Load album data on mount
     useEffect(() => {
       fetchAlbumData();
-    }, []);
+    }, [fetchAlbumData]);
 
-    // Handle song click to play it
-    const handlePlaySong = (songId) => {
-      if (songs.length > 0) {
-        playWithId(songId);
-      }
+    // Show song details modal
+    const handleSongClick = (song) => {
+      setSelectedSong(song);
+    };
+
+    // Play song from modal
+    const handlePlaySong = (song) => {
+      // Make sure album songs are the current playlist for context
+      setCurrentPlaylist(songs);
+      playWithId(song._id);
     };
 
     const gradientStyle = {
@@ -176,7 +183,7 @@ function DisplayAlbum() {
             songs.map((song, index) => (
               <div 
                 key={song._id}
-                onClick={() => handlePlaySong(song._id)}
+                onClick={() => handleSongClick(song)}
                 className='grid grid-cols-12 p-2 items-center text-white hover:bg-[#ffffff1a] rounded cursor-pointer group'
               >
                 <div className='col-span-1 text-center text-[#a7a7a7] group-hover:text-white'>{index + 1}</div>
@@ -209,6 +216,15 @@ function DisplayAlbum() {
             </div>
           )}
         </div>
+        
+        {/* Song Details Modal */}
+        {selectedSong && (
+          <SongDetailsModal
+            song={selectedSong}
+            onClose={() => setSelectedSong(null)}
+            onPlay={handlePlaySong}
+          />
+        )}
       </div>
     );
 }

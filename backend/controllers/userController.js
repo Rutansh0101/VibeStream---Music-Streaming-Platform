@@ -2,6 +2,8 @@ import User from '../models/User.js';
 import cloudinary from 'cloudinary';
 import fs from 'fs';
 import songModel from '../models/songModel.js';
+import playlistModel from '../models/playlistModel.js'; // Add this import
+import albumModel from '../models/albumModel.js'; // Add this import
 
 
 // Helper function to extract Cloudinary public ID from URL
@@ -159,25 +161,100 @@ export const getUserStats = async (req, res) => {
   try {
     const userId = req.userId;
     
-    // Use songModel (the one that's imported)
-    const songsCount = await songModel.countDocuments({ user: userId });
+    // Run queries in parallel for better performance
+    const [songsCount, playlistsCount, albumsCount] = await Promise.all([
+      songModel.countDocuments({ user: userId }),
+      playlistModel.countDocuments({ user: userId }),
+      albumModel.countDocuments({ user: userId })
+    ]);
     
-    // For models that might not exist yet, use default values
-    // Remove these or add proper imports when you create these models
-    const playlistsCount = 0;
-    const albumsCount = 0;
+    // Get most popular song if available
+    let mostPopularSong = null;
+    try {
+      mostPopularSong = await songModel
+        .findOne({ user: userId })
+        .sort({ plays: -1 }) // Assuming you have a plays field
+        .select('name plays image')
+        .limit(1);
+    } catch (err) {
+      console.log('Error fetching most popular song:', err);
+    }
+    
+    // Get latest playlist if available
+    let recentPlaylist = null;
+    try {
+      recentPlaylist = await playlistModel
+        .findOne({ user: userId })
+        .sort({ createdAt: -1 })
+        .select('name songs image')
+        .limit(1);
+    } catch (err) {
+      console.log('Error fetching recent playlist:', err);
+    }
     
     return res.status(200).json({
       success: true,
       songsCount,
       playlistsCount,
-      albumsCount
+      albumsCount,
+      mostPopularSong,
+      recentPlaylist
     });
   } catch (error) {
     console.error('Error getting user stats:', error);
     return res.status(500).json({
       success: false, 
-      message: 'Failed to fetch user statistics'
+      message: 'Failed to fetch user statistics',
+      error: error.message
+    });
+  }
+};
+
+export const getUserById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Find user but exclude sensitive fields
+    const user = await User.findById(id)
+      .select('name profilePic bio createdAt');
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    res.status(200).json({
+      success: true,
+      user
+    });
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch user data'
+    });
+  }
+};
+
+// Get users who have uploaded songs (artists)
+export const getArtists = async (req, res) => {
+  try {
+    // Find users who have songs - simpler query first
+    const artists = await User.find()
+      .select('name profilePic bio createdAt')
+      .limit(10);
+    
+    res.status(200).json({
+      success: true,
+      artists
+    });
+  } catch (error) {
+    console.error('Error fetching artists:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch artists'
     });
   }
 };
