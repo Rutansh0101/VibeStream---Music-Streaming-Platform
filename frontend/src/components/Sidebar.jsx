@@ -1,11 +1,13 @@
-import React from 'react'
 import {assets} from '../assets/frontend-assets/assets'
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 function Sidebar() {
     
     const navigate = useNavigate();
-
+    const location = useLocation();
+    if(location.pathname === '/add-song'){
+        return null;
+    }
   return (
     <div className='w-[25%] h-full p-2 flex-col gap-2 text-white hidden lg:flex'>
         <div className='bg-[#121212] h-[15%] rounded flex flex-col justify-around'>
@@ -33,11 +35,6 @@ function Sidebar() {
                 <h1>Create Your First Playlist</h1>
                 <p className='font-light'>it's easy, we'll help you</p>
                 <button className='px-4 py-1.5 bg-white text-[15px] text-black rounded-full mt-4 cursor-pointer'>Create Playlist</button>
-            </div>
-            <div className='p-4 bg-[#242424] m-2 rounded font-semibold flex flex-col items-start justify-start gap-1 pl-4'>
-                <h1>Let's Find Some Podcasts To Follow</h1>
-                <p className='font-light'>we'll keep you updated on new episodes</p>
-                <button className='px-4 py-1.5 bg-white text-[15px] text-black rounded-full mt-4 cursor-pointer'>Browse Podcasts</button>
             </div>
             <div className='p-4 bg-[#242424] m-2 rounded font-semibold flex flex-col items-start justify-start gap-1 pl-4'>
                 <h1>Upload A New Song</h1>

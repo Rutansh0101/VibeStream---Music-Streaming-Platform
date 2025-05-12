@@ -10,8 +10,8 @@ const songSchema = new mongoose.Schema({
         required: true,
     },
     album: {
-        type: String,
-        required: true,
+        type: mongoose.Schema.Types.Mixed, // Can be ObjectId or String
+        required: true
     },
     image: {
         type: String,
@@ -24,8 +24,13 @@ const songSchema = new mongoose.Schema({
     duration: {
         type: String,
         required: true,
+    },
+    user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
     }
-});
+}, { timestamps: true });
 
 const songModel = mongoose.model('Song', songSchema);
 export default songModel;

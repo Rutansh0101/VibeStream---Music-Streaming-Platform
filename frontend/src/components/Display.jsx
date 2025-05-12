@@ -5,35 +5,53 @@ import DisplayAlbum from './DisplayAlbum';
 import { albumsData } from '../assets/frontend-assets/assets';
 import AddSong from './AddSong';
 import AddAlbum from './AddAlbum';
-import ListSong from './ListSong';
 import ListAlbum from './ListAlbum';
+import Profile from './Profile';
+import YourSongs from './YourSongs';
+import Settings from './Settings';
+import Logout from './Logout';
+
 
 function Display() {
 
   const displayref = useRef();
   const location = useLocation();
   const isAlbum = location.pathname.includes("album");
-  const albumId = isAlbum ? location.pathname.slice(-1) : "";
-  const bgColor = albumsData[Number(albumId)].bgColor;
+  
+  // Fix: Properly extract album ID from path
+  let albumId = "";
+  if (isAlbum) {
+    // Extract the ID from paths like /album/123
+    const pathParts = location.pathname.split('/');
+    albumId = pathParts[pathParts.length - 1];
+  }
+  
+  // Fix: Check if albumData exists before accessing bgColor
+  const defaultBgColor = "#121212";
+  const albumData = albumsData[Number(albumId)];
+  const bgColor = albumData ? albumData.bgColor : defaultBgColor;
+  const isAddSong = location.pathname.includes("/add-song");
 
-  useEffect(()=>{
-    if(isAlbum){
+  useEffect(() => {
+    if (isAlbum && albumData) {
       displayref.current.style.background = `linear-gradient(${bgColor}, #121212)`;
+    } else {
+      displayref.current.style.background = defaultBgColor;
     }
-    else{
-      displayref.current.style.background = "#121212";
-    }
-  })
+  }, [location.pathname, bgColor, albumData, isAlbum]);
 
   return (
-    <div ref={displayref} className='w-[100%] m-2 px-6 pt-4 rounded bg-[#121212] text-white overflow-auto lg:w-[75%] lg:ml-0'>
+    <div ref={displayref} className={`w-[100%] rounded bg-[#121212] text-white overflow-auto ${isAddSong ? "lg:w-[100%]" : "lg:w-[75%] lg:ml-0  px-6 pt-4"} m-2`}>
         <Routes>
             <Route path='/' element={<DisplayHome/>} />
             <Route path='/album/:id' element={<DisplayAlbum/>} />
             <Route path='/add-song' element={<AddSong/>} />
             <Route path='/add-album' element={<AddAlbum/>} />
-            <Route path='/list-song' element={<ListSong/>}/>
-            <Route path='/list-album' element={<ListAlbum/>}/>
+            <Route path='/list-albums' element={<ListAlbum/>}/>
+            <Route path='/profile' element={<Profile/>} />
+            <Route path='/your-songs' element={<YourSongs/>} />
+            <Route path='/settings' element={<Settings/>} />
+            <Route path='/logout' element={<Logout/>} />
         </Routes>
     </div>
   )

@@ -1,12 +1,17 @@
 import express from 'express';
-import { addAlbum, listAlbum, removeAlbum } from '../controllers/albumController.js';
+import { addAlbum, listAlbum, getUserAlbums, removeAlbum, getAlbumById } from '../controllers/albumController.js';
 import upload from '../middlewares/multer.js';
+import { protect } from '../middlewares/authMiddleware.js';
 
 const albumRouter = express.Router();
 
-
-albumRouter.post('/add', upload.single('image'), addAlbum);
+// Public routes
 albumRouter.get('/list', listAlbum);
-albumRouter.post('/remove', removeAlbum);
+albumRouter.get('/:id', getAlbumById);
+
+// Protected routes (require authentication)
+albumRouter.post('/add', protect, upload.single('image'), addAlbum);
+albumRouter.get('/user/albums', protect, getUserAlbums);
+albumRouter.post('/remove', protect, removeAlbum);
 
 export default albumRouter;
