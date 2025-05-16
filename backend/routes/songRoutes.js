@@ -5,16 +5,13 @@ import { protect } from "../middlewares/authMiddleware.js";
 
 const songRouter = express.Router();
 
-// Protected routes - require authentication
 songRouter.post('/add', protect, upload.fields([{name: "image", maxCount: 1}, {name: "audio", maxCount: 1}]), addSong);
 songRouter.get('/user-songs', protect, getUserSongs);
 songRouter.post('/remove', protect, removeSong);
 
-// Public routes - anyone can access
-songRouter.get('/list', listSong);  // Define specific routes FIRST
+songRouter.get('/list', listSong);
 
-// Parameter route should come LAST
-songRouter.get('/:id', getSongById); // This should always be last
+songRouter.get('/:id', getSongById);
 
 songRouter.get('/by-user/:userId', getSongsByUserId);
 

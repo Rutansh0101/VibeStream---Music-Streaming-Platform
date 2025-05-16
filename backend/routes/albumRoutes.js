@@ -5,11 +5,9 @@ import { protect } from '../middlewares/authMiddleware.js';
 
 const albumRouter = express.Router();
 
-// Public routes
 albumRouter.get('/list', listAlbum);
 albumRouter.get('/:id', getAlbumById);
 
-// Protected routes (require authentication)
 albumRouter.post('/add', protect, upload.single('image'), addAlbum);
 albumRouter.get('/user/albums', protect, getUserAlbums);
 albumRouter.post('/remove', protect, removeAlbum);

@@ -10,7 +10,7 @@ const songSchema = new mongoose.Schema({
         required: true,
     },
     album: {
-        type: mongoose.Schema.Types.Mixed, // Can be ObjectId or String
+        type: mongoose.Schema.Types.Mixed,
         required: true
     },
     image: {

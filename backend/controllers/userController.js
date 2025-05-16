@@ -2,22 +2,18 @@ import User from '../models/User.js';
 import cloudinary from 'cloudinary';
 import fs from 'fs';
 import songModel from '../models/songModel.js';
-import playlistModel from '../models/playlistModel.js'; // Add this import
-import albumModel from '../models/albumModel.js'; // Add this import
+import playlistModel from '../models/playlistModel.js';
+import albumModel from '../models/albumModel.js';
 
 
-// Helper function to extract Cloudinary public ID from URL
 const extractPublicIdFromUrl = (url) => {
   if (!url) return null;
   
   try {
-    // Cloudinary URLs typically look like:
-    // https://res.cloudinary.com/your_cloud_name/image/upload/v1234567890/folder/public_id.jpg
     const regex = /\/upload\/(?:v\d+\/)?(.+)$/;
     const matches = url.match(regex);
     
     if (matches && matches[1]) {
-      // Remove file extension
       return matches[1].replace(/\.\w+$/, '');
     }
   } catch (error) {
@@ -27,7 +23,6 @@ const extractPublicIdFromUrl = (url) => {
   return null;
 };
 
-// Get user profile
 export const getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.userId).select('-password -refreshToken');
@@ -53,12 +48,10 @@ export const getProfile = async (req, res) => {
   }
 };
 
-// Update user profile
 export const updateProfile = async (req, res) => {
   try {
     const { name, email, bio, phone, location } = req.body;
     
-    // Find user
     const user = await User.findById(req.userId);
     
     if (!user) {
@@ -68,15 +61,12 @@ export const updateProfile = async (req, res) => {
       });
     }
 
-    // Update fields
     if (name) user.name = name;
     if (bio !== undefined) user.bio = bio;
     if (phone !== undefined) user.phone = phone;
     if (location !== undefined) user.location = location;
     
-    // Only update email if it's changed (requires validation)
     if (email && email !== user.email) {
-      // Check if email is already in use by another user
       const existingUser = await User.findOne({ email, _id: { $ne: user._id } });
       if (existingUser) {
         return res.status(400).json({
@@ -87,22 +77,17 @@ export const updateProfile = async (req, res) => {
       user.email = email;
     }
 
-    // Handle profile image upload if provided
     if (req.file) {
       try {
-        // If user already has a profile image, delete it from Cloudinary
         if (user.profileImage) {
           const publicId = extractPublicIdFromUrl(user.profileImage);
           if (publicId) {
-            // Delete old image from Cloudinary
             await cloudinary.v2.uploader.destroy(publicId).catch(err => {
               console.log('Failed to delete old image from Cloudinary:', err);
-              // Continue with the process even if deletion fails
             });
           }
         }
         
-        // Upload new image to cloudinary
         const result = await cloudinary.v2.uploader.upload(req.file.path, {
           folder: 'music_platform/profile_images',
           width: 300,
@@ -111,10 +96,8 @@ export const updateProfile = async (req, res) => {
           gravity: 'face'
         });
         
-        // Save image URL to user profile
         user.profileImage = result.secure_url;
         
-        // Delete the local file after upload
         fs.unlink(req.file.path, (err) => {
           if (err) console.error('Error deleting local file:', err);
         });
@@ -128,10 +111,8 @@ export const updateProfile = async (req, res) => {
       }
     }
 
-    // Save updated user
     await user.save();
 
-    // Return updated user
     res.status(200).json({
       success: true,
       message: 'Profile updated successfully',
@@ -161,26 +142,23 @@ export const getUserStats = async (req, res) => {
   try {
     const userId = req.userId;
     
-    // Run queries in parallel for better performance
     const [songsCount, playlistsCount, albumsCount] = await Promise.all([
       songModel.countDocuments({ user: userId }),
       playlistModel.countDocuments({ user: userId }),
       albumModel.countDocuments({ user: userId })
     ]);
     
-    // Get most popular song if available
     let mostPopularSong = null;
     try {
       mostPopularSong = await songModel
         .findOne({ user: userId })
-        .sort({ plays: -1 }) // Assuming you have a plays field
+        .sort({ plays: -1 })
         .select('name plays image')
         .limit(1);
     } catch (err) {
       console.log('Error fetching most popular song:', err);
     }
     
-    // Get latest playlist if available
     let recentPlaylist = null;
     try {
       recentPlaylist = await playlistModel
@@ -214,7 +192,6 @@ export const getUserById = async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Find user but exclude sensitive fields
     const user = await User.findById(id)
       .select('name profilePic bio createdAt');
     
@@ -238,10 +215,8 @@ export const getUserById = async (req, res) => {
   }
 };
 
-// Get users who have uploaded songs (artists)
 export const getArtists = async (req, res) => {
   try {
-    // Find users who have songs - simpler query first
     const artists = await User.find()
       .select('name profilePic bio createdAt')
       .limit(10);

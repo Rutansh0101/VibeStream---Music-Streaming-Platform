@@ -4,10 +4,8 @@ import User from '../models/User.js';
 export const protect = async (req, res, next) => {
   let token;
 
-  // Check if token exists in headers
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
-      // Get token from header
       token = req.headers.authorization.split(' ')[1];
 
       if (!token) {
@@ -17,10 +15,8 @@ export const protect = async (req, res, next) => {
         });
       }
 
-      // Verify token
       const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
 
-      // Set user in request
       req.userId = decoded.id;
       req.user = await User.findById(decoded.id).select('-password');
       
@@ -35,7 +31,6 @@ export const protect = async (req, res, next) => {
     } catch (error) {
       console.error('Auth middleware error:', error);
       
-      // Handle specific jwt errors
       if (error.name === 'TokenExpiredError') {
         return res.status(401).json({
           success: false,
@@ -49,7 +44,6 @@ export const protect = async (req, res, next) => {
         });
       }
       
-      // Handle other errors
       return res.status(401).json({
         success: false,
         message: 'Not authorized'

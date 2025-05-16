@@ -24,7 +24,7 @@ const albumSchema = new mongoose.Schema({
     },
     bgColor: {
         type: String,
-        default: "#121212" // Default background color
+        default: "#121212"
     },
     image: {
         type: String,

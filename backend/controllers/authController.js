@@ -1,16 +1,13 @@
 import User from '../models/User.js';
 import jwt from 'jsonwebtoken';
 
-// Generate tokens
 const generateTokens = (userId) => {
-  // Access token (short-lived)
   const accessToken = jwt.sign(
     { id: userId },
     process.env.JWT_ACCESS_SECRET,
-    { expiresIn: '2h' } // 2 hours
+    { expiresIn: '2h' }
   );
 
-  // Refresh token (long-lived)
   const refreshToken = jwt.sign(
     { id: userId },
     process.env.JWT_REFRESH_SECRET,
@@ -20,12 +17,10 @@ const generateTokens = (userId) => {
   return { accessToken, refreshToken };
 };
 
-// Register a new user
 export const register = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({
@@ -34,26 +29,22 @@ export const register = async (req, res) => {
       });
     }
 
-    // Create new user
     const user = await User.create({
       name,
       email,
       password
     });
 
-    // Generate tokens
     const { accessToken, refreshToken } = generateTokens(user._id);
 
-    // Save refresh token to database
     user.refreshToken = refreshToken;
     await user.save();
 
-    // Send tokens in response
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+      maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
     res.status(201).json({
@@ -77,12 +68,10 @@ export const register = async (req, res) => {
   }
 };
 
-// Login user
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Check if user exists
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(401).json({
@@ -91,7 +80,6 @@ export const login = async (req, res) => {
       });
     }
 
-    // Check if password is correct
     const isPasswordCorrect = await user.comparePassword(password);
     if (!isPasswordCorrect) {
       return res.status(401).json({
@@ -100,19 +88,16 @@ export const login = async (req, res) => {
       });
     }
 
-    // Generate tokens
     const { accessToken, refreshToken } = generateTokens(user._id);
 
-    // Save refresh token to database
     user.refreshToken = refreshToken;
     await user.save();
 
-    // Send tokens in response
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+      maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
     res.status(200).json({
@@ -140,7 +125,6 @@ export const login = async (req, res) => {
   }
 };
 
-// Refresh token
 export const refreshToken = async (req, res) => {
   try {
     const refreshToken = req.cookies.refreshToken;
@@ -152,10 +136,8 @@ export const refreshToken = async (req, res) => {
       });
     }
 
-    // Verify refresh token
     const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
-    
-    // Find user with this refresh token
+
     const user = await User.findOne({ _id: decoded.id, refreshToken });
     
     if (!user) {
@@ -165,19 +147,16 @@ export const refreshToken = async (req, res) => {
       });
     }
 
-    // Generate new tokens
     const newTokens = generateTokens(user._id);
     
-    // Update refresh token in database
     user.refreshToken = newTokens.refreshToken;
     await user.save();
 
-    // Send new tokens
     res.cookie('refreshToken', newTokens.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+      maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
     res.status(200).json({
@@ -194,7 +173,6 @@ export const refreshToken = async (req, res) => {
   }
 };
 
-// Logout user
 export const logout = async (req, res) => {
   try {
     const refreshToken = req.cookies.refreshToken;
@@ -206,13 +184,11 @@ export const logout = async (req, res) => {
       });
     }
 
-    // Find user with this refresh token and clear it
     await User.findOneAndUpdate(
       { refreshToken },
       { refreshToken: null }
     );
 
-    // Clear cookie
     res.clearCookie('refreshToken');
 
     res.status(200).json({
@@ -229,7 +205,6 @@ export const logout = async (req, res) => {
   }
 };
 
-// Get current user
 export const getCurrentUser = async (req, res) => {
   try {
     const user = await User.findById(req.userId).select('-password -refreshToken');

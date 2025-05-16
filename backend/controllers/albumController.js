@@ -2,9 +2,8 @@ import {v2 as cloudinary} from 'cloudinary';
 import albumModel from '../models/albumModel.js';
 import fs from 'fs';
 
-// Helper function to generate a background color based on the image
+
 const generateBgColor = () => {
-    // Generate a random dark color suitable for album background
     const colors = [
         "#121212", "#1E1E1E", "#2D142C", "#391306", 
         "#0A1828", "#162447", "#1B263B", "#480032", 
@@ -13,7 +12,6 @@ const generateBgColor = () => {
     return colors[Math.floor(Math.random() * colors.length)];
 };
 
-// Add a new album
 const addAlbum = async (req, res) => {
     try {
         const {name, desc, genre, releaseDate} = req.body;
@@ -27,27 +25,21 @@ const addAlbum = async (req, res) => {
             return res.status(400).json({success: false, message: 'Please upload an album cover image'});
         }
 
-        // Make sure we have a user ID (should be set by auth middleware)
         if (!req.userId && !req.user?._id) {
             return res.status(401).json({
                 success: false, 
                 message: 'Authentication error - user not identified'
             });
         }
-        
-        // Use either req.userId or req.user._id
-        const userId = req.userId || req.user._id;
 
-        // Generate a background color based on the image or use a random one
+        const userId = req.userId || req.user._id;
         const bgColor = generateBgColor();
 
-        // Upload image to cloudinary
         const imageUpload = await cloudinary.uploader.upload(imageFile.path, {
             resource_type: 'image',
             folder: 'album_covers',
         });
 
-        // Create album with user reference
         const albumData = {
             name,
             desc,
@@ -55,13 +47,12 @@ const addAlbum = async (req, res) => {
             releaseDate,
             bgColor,
             image: imageUpload.secure_url,
-            user: userId, // Use the determined userId
+            user: userId,
             songs: []
         };
 
         const album = await albumModel.create(albumData);
 
-        // Clean up the temporary file
         if (fs.existsSync(imageFile.path)) {
             fs.unlinkSync(imageFile.path);
         }
@@ -91,7 +82,6 @@ const addAlbum = async (req, res) => {
     }
 };
 
-// List all albums
 const listAlbum = async (req, res) => {
     try {
         const albums = await albumModel.find()
@@ -109,7 +99,6 @@ const listAlbum = async (req, res) => {
     }
 };
 
-// Get albums by current user
 const getUserAlbums = async (req, res) => {
     try {
         const userId = req.userId || req.user?._id;
@@ -127,7 +116,6 @@ const getUserAlbums = async (req, res) => {
     }
 };
 
-// Remove an album
 const removeAlbum = async (req, res) => {
     try {
         const {id} = req.body;
@@ -136,28 +124,23 @@ const removeAlbum = async (req, res) => {
             return res.status(400).json({success: false, message: 'Please provide an album id'});
         }
 
-        // Find the album
         const album = await albumModel.findById(id);
         
         if (!album) {
             return res.status(404).json({success: false, message: 'Album not found'});
         }
-        
-        // Check if user owns this album
+
         if (album.user.toString() !== req.user._id.toString()) {
             return res.status(403).json({success: false, message: 'You do not have permission to delete this album'});
         }
-        
-        // Extract public ID from cloudinary URL
+
         const imageUrl = album.image;
         const splitUrl = imageUrl.split('/');
         const publicIdWithExtension = splitUrl[splitUrl.length - 1];
         const publicId = `album_covers/${publicIdWithExtension.split('.')[0]}`;
-        
-        // Delete image from cloudinary
+
         await cloudinary.uploader.destroy(publicId);
-        
-        // Delete album from database
+
         const deletedAlbum = await albumModel.findByIdAndDelete(id);
         
         if (deletedAlbum) {
@@ -175,7 +158,6 @@ const removeAlbum = async (req, res) => {
     }
 };
 
-// Get album by ID
 const getAlbumById = async (req, res) => {
     try {
         const { id } = req.params;

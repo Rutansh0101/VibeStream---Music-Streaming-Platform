@@ -48,7 +48,7 @@ function Signup() {
       <div className="w-full max-w-md">
         <div className="flex justify-center mb-8">
           <img 
-            src="/logo.svg" // Replace with your logo
+            src="/logo.png"
             alt="Music Platform Logo" 
             className="w-16 h-16"
           />

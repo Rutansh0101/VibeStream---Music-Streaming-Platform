@@ -3,7 +3,6 @@ import songModel from "../models/songModel.js";
 import cloudinary from "../config/cloudinary.js";
 import fs from 'fs';
 
-// Create a new playlist
 const createPlaylist = async (req, res) => {
     try {
         console.log("Create playlist request received:", req.body);
@@ -12,7 +11,6 @@ const createPlaylist = async (req, res) => {
         const { name, desc } = req.body;
         let image = '';
         
-        // Check if we have the required fields
         if (!name) {
             return res.status(400).json({
                 success: false,
@@ -20,12 +18,10 @@ const createPlaylist = async (req, res) => {
             });
         }
 
-        // Check if image file was uploaded
         if (req.file) {
             console.log("Image file received:", req.file.path);
             
             try {
-                // Upload image to Cloudinary
                 const result = await cloudinary.uploader.upload(req.file.path, {
                     folder: 'playlists',
                 });
@@ -33,21 +29,18 @@ const createPlaylist = async (req, res) => {
                 image = result.secure_url;
                 console.log("Image uploaded to Cloudinary:", image);
                 
-                // Remove the uploaded file
                 if (fs.existsSync(req.file.path)) {
                     fs.unlinkSync(req.file.path);
                 }
             } catch (cloudinaryError) {
                 console.error("Cloudinary upload error:", cloudinaryError);
-                // Continue without image if Cloudinary fails
             }
         }
         
-        // Create playlist with user ID from auth middleware
         const playlist = await playlistModel.create({
             name,
             desc: desc || '',
-            image: image || undefined, // Use default if not uploaded
+            image: image || undefined,
             user: req.userId,
             songs: []
         });
@@ -69,7 +62,6 @@ const createPlaylist = async (req, res) => {
     }
 };
 
-// Get all playlists for the current user
 const getUserPlaylists = async (req, res) => {
     try {
         const playlists = await playlistModel.find({ user: req.userId })
@@ -91,7 +83,6 @@ const getUserPlaylists = async (req, res) => {
     }
 };
 
-// Get a single playlist by ID
 const getPlaylistById = async (req, res) => {
     try {
         const { id } = req.params;
@@ -126,12 +117,11 @@ const getPlaylistById = async (req, res) => {
     }
 };
 
-// Add a song to a playlist
 const addSongToPlaylist = async (req, res) => {
   try {
     const { playlistId } = req.params;
     const { songId } = req.body;
-    const userId = req.userId; // From auth middleware
+    const userId = req.userId;
     
     if (!songId) {
       return res.status(400).json({
@@ -140,7 +130,6 @@ const addSongToPlaylist = async (req, res) => {
       });
     }
     
-    // Check if playlist exists and belongs to user
     const playlist = await playlistModel.findOne({ _id: playlistId, user: userId });
     
     if (!playlist) {
@@ -150,7 +139,6 @@ const addSongToPlaylist = async (req, res) => {
       });
     }
     
-    // Check if song exists
     const song = await songModel.findById(songId);
     
     if (!song) {
@@ -160,7 +148,6 @@ const addSongToPlaylist = async (req, res) => {
       });
     }
     
-    // Check if song is already in the playlist
     if (playlist.songs.includes(songId)) {
       return res.status(400).json({
         success: false,
@@ -168,7 +155,6 @@ const addSongToPlaylist = async (req, res) => {
       });
     }
     
-    // Add song to playlist
     playlist.songs.push(songId);
     await playlist.save();
     
@@ -188,12 +174,10 @@ const addSongToPlaylist = async (req, res) => {
   }
 };
 
-// Remove a song from a playlist
 const removeSongFromPlaylist = async (req, res) => {
     try {
         const { playlistId, songId } = req.body;
         
-        // Check if playlist exists and belongs to user
         const playlist = await playlistModel.findOne({
             _id: playlistId,
             user: req.userId
@@ -206,7 +190,6 @@ const removeSongFromPlaylist = async (req, res) => {
             });
         }
         
-        // Remove song from playlist
         playlist.songs = playlist.songs.filter(song => song.toString() !== songId);
         await playlist.save();
         
@@ -224,12 +207,10 @@ const removeSongFromPlaylist = async (req, res) => {
     }
 };
 
-// Delete a playlist
 const deletePlaylist = async (req, res) => {
     try {
         const { id } = req.params;
         
-        // Check if playlist exists and belongs to user
         const playlist = await playlistModel.findOne({
             _id: id,
             user: req.userId
@@ -242,13 +223,11 @@ const deletePlaylist = async (req, res) => {
             });
         }
         
-        // Delete playlist image from Cloudinary if it exists
         if (playlist.image && !playlist.image.includes('default-playlist')) {
             const publicId = playlist.image.split('/').pop().split('.')[0];
             await cloudinary.uploader.destroy(`playlists/${publicId}`);
         }
         
-        // Delete playlist
         await playlistModel.findByIdAndDelete(id);
         
         res.status(200).json({
@@ -264,13 +243,11 @@ const deletePlaylist = async (req, res) => {
     }
 };
 
-// Update playlist details
 const updatePlaylist = async (req, res) => {
     try {
         const { id } = req.params;
         const { name, desc } = req.body;
         
-        // Check if playlist exists and belongs to user
         const playlist = await playlistModel.findOne({
             _id: id,
             user: req.userId
@@ -283,26 +260,21 @@ const updatePlaylist = async (req, res) => {
             });
         }
         
-        // Update fields if provided
         if (name) playlist.name = name;
         if (desc !== undefined) playlist.desc = desc;
         
-        // Check if image file was uploaded
         if (req.file) {
-            // Delete old image from Cloudinary if it exists
             if (playlist.image && !playlist.image.includes('default-playlist')) {
                 const publicId = playlist.image.split('/').pop().split('.')[0];
                 await cloudinary.uploader.destroy(`playlists/${publicId}`);
             }
             
-            // Upload new image to Cloudinary
             const result = await cloudinary.uploader.upload(req.file.path, {
                 folder: 'playlists',
             });
             
             playlist.image = result.secure_url;
             
-            // Remove the uploaded file
             if (fs.existsSync(req.file.path)) {
                 fs.unlinkSync(req.file.path);
             }
@@ -324,10 +296,8 @@ const updatePlaylist = async (req, res) => {
     }
 };
 
-// Get public playlists (for discovery)
 const getPublicPlaylists = async (req, res) => {
     try {
-        // Get most recent playlists with at least one song
         const playlists = await playlistModel.find({ 
             "songs.0": { $exists: true } 
         })

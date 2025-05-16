@@ -3,15 +3,10 @@ import { v2 as cloudinary } from 'cloudinary';
 import fs from 'fs';
 import albumModel from "../models/albumModel.js";
 
-// Helper function to extract Cloudinary public ID from URL
 const extractPublicIdFromUrl = (url, isAudio = false) => {
     if (!url) return null;
 
     try {
-        // Cloudinary URLs typically look like:
-        // https://res.cloudinary.com/your_cloud_name/image/upload/v1234567890/folder/public_id.jpg
-        // or for audio:
-        // https://res.cloudinary.com/your_cloud_name/video/upload/v1234567890/folder/public_id.mp3
         const resourceType = isAudio ? 'video' : 'image';
         const regex = new RegExp(`/${resourceType}/upload/(?:v\\d+/)?(.*?)(?:\\.|$)`);
         const matches = url.match(regex);
@@ -26,7 +21,6 @@ const extractPublicIdFromUrl = (url, isAudio = false) => {
     return null;
 };
 
-// Add a new song
 const addSong = async (req, res) => {
     try {
         const { name, desc, album } = req.body;
@@ -37,24 +31,20 @@ const addSong = async (req, res) => {
             return res.status(400).json({ success: false, message: "Please fill all the fields" });
         }
 
-        // Upload audio file to Cloudinary
         const audioUpload = await cloudinary.uploader.upload(audioFile.path, {
             resource_type: "video",
             folder: "songs/audio",
         });
 
-        // Upload image file to Cloudinary
         const imageUpload = await cloudinary.uploader.upload(imageFile.path, {
             resource_type: "image",
             folder: "songs/image",
         });
 
-        // Format duration as mm:ss
         const minutes = Math.floor(audioUpload.duration / 60);
         const seconds = Math.floor(audioUpload.duration % 60);
         const duration = `${minutes}:${seconds < 10 ? '0' + seconds : seconds}`;
 
-        // Create song data with user reference
         const songData = {
             name,
             desc,
@@ -62,7 +52,7 @@ const addSong = async (req, res) => {
             image: imageUpload.secure_url,
             file: audioUpload.secure_url,
             duration,
-            user: req.userId // From auth middleware
+            user: req.userId
         };
 
         const song = await songModel.create(songData);
@@ -71,10 +61,8 @@ const addSong = async (req, res) => {
             return res.status(400).json({ success: false, message: "Song not added" });
         }
 
-        // If song belongs to an album (not "none"), update the album
         if (album !== "none") {
             try {
-                // Find the album and add this song to its songs array
                 await albumModel.findByIdAndUpdate(
                     album,
                     { $push: { songs: song._id } },
@@ -82,11 +70,9 @@ const addSong = async (req, res) => {
                 );
             } catch (albumError) {
                 console.error("Error updating album with song:", albumError);
-                // We continue even if album update fails, because song was created successfully
             }
         }
 
-        // Clean up local files after upload
         if (fs.existsSync(audioFile.path)) fs.unlinkSync(audioFile.path);
         if (fs.existsSync(imageFile.path)) fs.unlinkSync(imageFile.path);
 
@@ -114,7 +100,6 @@ const addSong = async (req, res) => {
 // Get all songs
 const listSong = async (req, res) => {
     try {
-        // Try with simpler query without sorting if there's an issue
         const allSongs = await songModel.find().limit(10);
         
         res.status(200).json({
@@ -128,11 +113,10 @@ const listSong = async (req, res) => {
     }
 }
 
-// Get songs uploaded by the current user
 const getUserSongs = async (req, res) => {
     try {
         const userSongs = await songModel.find({ user: req.userId })
-            .sort({ createdAt: -1 }); // Sort by newest first
+            .sort({ createdAt: -1 });
 
         res.status(200).json({
             success: true,
@@ -150,7 +134,6 @@ const removeSong = async (req, res) => {
     try {
         const { id } = req.body;
 
-        // Find the song
         const song = await songModel.findById(id);
 
         if (!song) {
@@ -160,7 +143,6 @@ const removeSong = async (req, res) => {
             });
         }
 
-        // Check if the user is the owner of the song
         if (song.user.toString() !== req.userId.toString()) {
             return res.status(403).json({
                 success: false,
@@ -168,11 +150,9 @@ const removeSong = async (req, res) => {
             });
         }
 
-        // Delete files from Cloudinary
         const audioPublicId = extractPublicIdFromUrl(song.file, true);
         const imagePublicId = extractPublicIdFromUrl(song.image);
 
-        // Array to hold deletion promises
         const deletionPromises = [];
 
         if (audioPublicId) {
@@ -204,14 +184,11 @@ const removeSong = async (req, res) => {
                 );
             } catch (albumError) {
                 console.error("Error removing song from album:", albumError);
-                // We continue with song deletion even if this fails
             }
         }
 
-        // Wait for all Cloudinary deletions to complete
         await Promise.all(deletionPromises);
 
-        // Delete song from database
         await songModel.findByIdAndDelete(id);
 
         res.status(200).json({
