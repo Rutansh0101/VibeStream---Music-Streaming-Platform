@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Navbar from './Navbar';
-import { FiLoader, FiMusic, FiClock, FiMoreHorizontal, FiPlay, FiHeart } from 'react-icons/fi';
+import { FiLoader, FiMusic, FiClock, FiMoreHorizontal, FiPlay, FiHeart, FiEdit2 } from 'react-icons/fi';
+import { MdDelete, MdClose } from 'react-icons/md';
 import axios from 'axios';
 import { format } from 'date-fns';
 import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { PlayerContext } from '../context/PlayerContext';
 import { AuthContext } from '../context/AuthContext';
 import SongDetailsModal from './SongDetailsModal';
@@ -20,6 +22,10 @@ function DisplayPlaylist() {
   const [error, setError] = useState(null);
   const [isUserPlaylist, setIsUserPlaylist] = useState(false);
   const [selectedSong, setSelectedSong] = useState(null);
+  
+  // State for song removal confirmation
+  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
+  const [songToRemove, setSongToRemove] = useState(null);
 
   // Format date for display
   const formatDate = (dateString) => {
@@ -103,16 +109,21 @@ function DisplayPlaylist() {
     };
 
     fetchPlaylist();
-  }, []);
+  }, [id]);
 
-  const removeSongFromPlaylist = async (songId, e) => {
-    // Prevent click from opening modal
-    e.stopPropagation();
-    
+  // Handle click on remove button
+  const handleRemoveClick = (song, e) => {
+    e.stopPropagation(); // Prevent opening song modal
+    setSongToRemove(song);
+    setShowRemoveConfirm(true);
+  };
+
+  // Handle actual removal after confirmation
+  const removeSongFromPlaylist = async () => {
     try {
       const response = await axios.post(
         'http://localhost:4000/api/playlists/remove-song',
-        { playlistId: id, songId },
+        { playlistId: id, songId: songToRemove._id },
         { 
           headers: authHeader(),
           withCredentials: true 
@@ -121,8 +132,10 @@ function DisplayPlaylist() {
       
       if (response.data.success) {
         // Update the songs list
-        setSongs(songs.filter(song => song._id !== songId));
+        setSongs(songs.filter(song => song._id !== songToRemove._id));
         toast.success('Song removed from playlist');
+        setShowRemoveConfirm(false);
+        setSongToRemove(null);
       } else {
         toast.error(response.data.message || 'Failed to remove song');
       }
@@ -167,7 +180,7 @@ function DisplayPlaylist() {
       
       <div className='mt-10 px-6 flex gap-8 flex-col md:flex-row md:items-end'>
         {playlist.image ? (
-          <img src={playlist.image} alt={playlist.name} className='rounded shadow-2xl w-48 md:w-60'/>
+          <img src={playlist.image} alt={playlist.name} className='rounded shadow-2xl w-48 md:w-60 h-60 object-cover'/>
         ) : (
           <div className='w-48 md:w-60 aspect-square flex items-center justify-center bg-gray-800 rounded shadow-2xl'>
             <FiMusic size={48} className='text-gray-600' />
@@ -193,19 +206,19 @@ function DisplayPlaylist() {
           {songs.length > 0 && (
             <button 
               onClick={playAllSongs}
-              className='bg-[#E91429] text-white rounded-full w-12 h-12 flex items-center justify-center hover:bg-[#fa1b38] transition-colors shadow-lg'
+              className='bg-[#E91429] cursor-pointer text-white rounded-full w-12 h-12 flex items-center justify-center hover:bg-[#fa1b38] transition-colors shadow-lg'
             >
               <FiPlay size={20} className="ml-1" />
             </button>
           )}
-          {isUserPlaylist && (
+          
             <Link 
               to={`/edit-playlist/${playlist._id}`}
-              className='text-white opacity-60 hover:opacity-100 transition-opacity'
+              className='bg-[#282828] text-white px-4 py-2 rounded-full hover:bg-[#3E3E3E] transition-colors flex items-center gap-2'
             >
-              Edit playlist
+              <FiEdit2 size={16} />
             </Link>
-          )}
+          
         </div>
         
         <div className='mb-4'>
@@ -251,14 +264,15 @@ function DisplayPlaylist() {
                   {song.duration || '0:00'}
                 </div>
                 <div className='col-span-1 flex justify-end'>
-                  {isUserPlaylist && (
+                  
                     <button 
-                      onClick={(e) => removeSongFromPlaylist(song._id, e)}
-                      className='opacity-0 group-hover:opacity-100 text-gray-400 hover:text-white transition-opacity'
+                      onClick={(e) => handleRemoveClick(song, e)}
+                      className='opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 p-1 rounded transition-opacity flex items-center gap-1'
+                      title="Remove from playlist"
                     >
-                      Remove
+                      <MdDelete size={18} />
                     </button>
-                  )}
+                  
                 </div>
               </div>
             ))
@@ -278,6 +292,39 @@ function DisplayPlaylist() {
           onClose={() => setSelectedSong(null)}
           onPlay={handlePlaySong}
         />
+      )}
+
+      {/* Song Removal Confirmation Modal */}
+      {showRemoveConfirm && songToRemove && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowRemoveConfirm(false)}></div>
+          <div className="relative bg-[#282828] p-6 rounded-md shadow-lg max-w-md w-full mx-4">
+            <button 
+              onClick={() => setShowRemoveConfirm(false)}
+              className="absolute top-3 right-3 text-gray-400 hover:text-white"
+            >
+              <MdClose size={20} />
+            </button>
+            <h3 className="text-white text-lg font-bold mb-4">Remove Song</h3>
+            <p className="text-gray-200 mb-6">
+              Are you sure you want to remove "{songToRemove.name}" from this playlist?
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowRemoveConfirm(false)}
+                className="px-4 py-2 bg-[#333333] text-white rounded-full hover:bg-opacity-80 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={removeSongFromPlaylist}
+                className="px-4 py-2 bg-red-600 text-white rounded-full hover:bg-opacity-80 transition"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

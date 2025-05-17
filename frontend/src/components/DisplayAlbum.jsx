@@ -18,7 +18,7 @@ function DisplayAlbum() {
     const [songs, setSongs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [bgColor, setBgColor] = useState("#121212"); // Default background color
+    const [bgColor, setBgColor] = useState("#121212");
     const [selectedSong, setSelectedSong] = useState(null);
     
     const memoizedSetPlaylist = useCallback((playlist) => {
@@ -142,7 +142,7 @@ function DisplayAlbum() {
 
 
     return (
-      <div className={`min-h-full bg-gradient-to-b from-[${bgColor}] to-[#191414]`}>
+      <div className={`min-h-full py-4 px-2`} style={gradientStyle}>
         <Navbar />
         <ToastContainer theme="dark" />
         

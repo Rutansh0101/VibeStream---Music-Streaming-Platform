@@ -3,6 +3,23 @@ import songModel from "../models/songModel.js";
 import cloudinary from "../config/cloudinary.js";
 import fs from 'fs';
 
+const extractPublicIdFromUrl = (url) => {
+    if (!url) return null;
+
+    try {
+        const regex = new RegExp(`/image/upload/(?:v\\d+/)?(.*?)(?:\\.|$)`);
+        const matches = url.match(regex);
+
+        if (matches && matches[1]) {
+            return matches[1];
+        }
+    } catch (error) {
+        console.error('Error extracting public ID:', error);
+    }
+
+    return null;
+};
+
 const createPlaylist = async (req, res) => {
     try {
         console.log("Create playlist request received:", req.body);
@@ -19,28 +36,33 @@ const createPlaylist = async (req, res) => {
         }
 
         if (req.file) {
-            console.log("Image file received:", req.file.path);
             
             try {
+                
                 const result = await cloudinary.uploader.upload(req.file.path, {
+                    resource_type: "image",
                     folder: 'playlists',
                 });
                 
                 image = result.secure_url;
-                console.log("Image uploaded to Cloudinary:", image);
                 
                 if (fs.existsSync(req.file.path)) {
                     fs.unlinkSync(req.file.path);
                 }
             } catch (cloudinaryError) {
                 console.error("Cloudinary upload error:", cloudinaryError);
+                return res.status(400).json({
+                    success: false,
+                    message: 'Failed to upload image',
+                    error: cloudinaryError.message
+                });
             }
         }
         
         const playlist = await playlistModel.create({
             name,
             desc: desc || '',
-            image: image || undefined,
+            image: image || null,
             user: req.userId,
             songs: []
         });
@@ -223,9 +245,11 @@ const deletePlaylist = async (req, res) => {
             });
         }
         
-        if (playlist.image && !playlist.image.includes('default-playlist')) {
-            const publicId = playlist.image.split('/').pop().split('.')[0];
-            await cloudinary.uploader.destroy(`playlists/${publicId}`);
+        if (playlist.image) {
+            const publicId = extractPublicIdFromUrl(playlist.image);
+            if (publicId) {
+                await cloudinary.uploader.destroy(publicId, { resource_type: "image" });
+            }
         }
         
         await playlistModel.findByIdAndDelete(id);
@@ -264,19 +288,35 @@ const updatePlaylist = async (req, res) => {
         if (desc !== undefined) playlist.desc = desc;
         
         if (req.file) {
-            if (playlist.image && !playlist.image.includes('default-playlist')) {
-                const publicId = playlist.image.split('/').pop().split('.')[0];
-                await cloudinary.uploader.destroy(`playlists/${publicId}`);
+            if (playlist.image) {
+                const publicId = extractPublicIdFromUrl(playlist.image);
+                if (publicId) {
+                    try {
+                        await cloudinary.uploader.destroy(publicId, { resource_type: "image" });
+                    } catch (err) {
+                        console.error("Error deleting old image:", err);
+                    }
+                }
             }
             
-            const result = await cloudinary.uploader.upload(req.file.path, {
-                folder: 'playlists',
-            });
-            
-            playlist.image = result.secure_url;
-            
-            if (fs.existsSync(req.file.path)) {
-                fs.unlinkSync(req.file.path);
+            try {
+                const result = await cloudinary.uploader.upload(req.file.path, {
+                    resource_type: "image",
+                    folder: 'playlists',
+                });
+                
+                playlist.image = result.secure_url;
+                
+                if (fs.existsSync(req.file.path)) {
+                    fs.unlinkSync(req.file.path);
+                }
+            } catch (cloudinaryError) {
+                console.error("Cloudinary upload error:", cloudinaryError);
+                return res.status(400).json({
+                    success: false,
+                    message: 'Failed to upload image',
+                    error: cloudinaryError.message
+                });
             }
         }
         

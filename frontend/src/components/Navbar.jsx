@@ -116,6 +116,12 @@ function Navbar() {
                                     Your Songs
                                 </div>
                                 <div
+                                    onClick={() => navigate('/playlists')}
+                                    className='px-4 py-2 text-sm text-white hover:bg-[#3E3E3E] cursor-pointer flex items-center'
+                                >
+                                    Your Playlists
+                                </div>
+                                <div
                                     onClick={()=> navigate('/list-albums')}
                                     className='px-4 py-2 text-sm text-white hover:bg-[#3E3E3E] cursor-pointer flex items-center'
                                 >

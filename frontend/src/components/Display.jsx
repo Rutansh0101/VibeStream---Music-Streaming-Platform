@@ -14,6 +14,7 @@ import DisplayPlaylist from './DisplayPlaylist'
 import UserPlaylists from './UserPlaylists';
 import Search from './Search'; // Import the Search component
 import ArtistProfile from './ArtistProfile';
+import EditPlaylist from './EditPlaylist';
 
 function Display() {
 
@@ -44,7 +45,7 @@ function Display() {
   }, [location.pathname, bgColor, albumData, isAlbum]);
 
   return (
-    <div ref={displayref} className={`w-[100%] rounded bg-[#121212] text-white overflow-auto ${isAddSong ? "lg:w-[100%]" : "lg:w-[75%] lg:ml-0  px-6 pt-4"} m-2`}>
+    <div ref={displayref} className={`w-[100%] rounded bg-[#121212] text-white overflow-auto ${isAddSong ? "lg:w-[100%]" : "lg:w-[75%] lg:ml-0"} m-2 ${location.pathname === "/album/:id" ? "px-6 pt-4" : "p-3"}`}>
         <Routes>
             <Route path='/' element={<DisplayHome/>} />
             <Route path='/album/:id' element={<DisplayAlbum/>} />
@@ -59,6 +60,7 @@ function Display() {
             <Route path='/playlists' element={<UserPlaylists />} />
             <Route path='/search' element={<Search />} /> {/* Add the search route */}
             <Route path='/artist/:id' element={<ArtistProfile />} />
+            <Route path='/edit-playlist/:id' element={<EditPlaylist/>}/>
         </Routes>
     </div>
   )

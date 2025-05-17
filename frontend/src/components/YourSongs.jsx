@@ -38,6 +38,7 @@ function YourSongs() {
       });
 
       if (response.data.success) {
+        console.log('Fetched songs:', response.data.songs);
         setSongs(response.data.songs);
       } else {
         setError('Failed to load your songs');

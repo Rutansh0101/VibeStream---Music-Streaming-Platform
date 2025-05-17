@@ -3,7 +3,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import 'dotenv/config';
 import connectDB from './config/mongodb.js';
-import connectCloudinary from './config/cloudinary.js';
+import {connectCloudinary} from './config/cloudinary.js';
 import fs from 'fs';
 import path from 'path';
 import multer from 'multer';
@@ -33,7 +33,7 @@ app.get('/', (req, res) => {
   res.send('Music Streaming Platform API is running!');
 });
 
-app.use('/api/auth', authRouter);
+app.use('/api/auth', authRouter);// /api/auth/logout
 app.use('/api/songs', songRouter);
 app.use('/api/albums', albumRouter);
 app.use('/api/user', userRouter);
